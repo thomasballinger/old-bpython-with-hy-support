@@ -163,11 +163,12 @@ class Repl(BpythonRepl):
         self.rl_char_sequences = get_updated_char_sequences(key_dispatch, config)
         logging.debug("starting parent init")
         super(Repl, self).__init__(interp, config)
+        self.ps1 = '=> '
         self.formatter = BPythonFormatter(config.color_scheme)
         self.interact = self.status_bar # overwriting what bpython.Repl put there
                                         # interact is called to interact with the status bar,
                                         # so we're just using the same object
-        self._current_line = '' # line currently being edited, without '>>> '
+        self._current_line = '' # line currently being edited, without self.ps1
         self.current_stdouterr_line = '' # current line of output - stdout and stdin go here
         self.display_lines = [] # lines separated whenever logical line
                                 # length goes over what the terminal width
@@ -434,7 +435,7 @@ class Repl(BpythonRepl):
                              char +
                              self._current_line[self.cursor_offset_in_line:])
         self.cursor_offset_in_line += 1
-        if self.config.cli_trim_prompts and self._current_line.startswith(">>> "):
+        if self.config.cli_trim_prompts and self._current_line.startswith(self.ps1):
             self._current_line = self._current_line[4:]
             self.cursor_offset_in_line = max(0, self.cursor_offset_in_line - 4)
         #TODO deal with characters that take up more than one space? do we care?
@@ -859,7 +860,7 @@ class Repl(BpythonRepl):
         text = self.getstdout()
         with tempfile.NamedTemporaryFile(suffix='.py') as temp:
             temp.write('### current bpython session - file will be reevaluated, ### lines will not be run\n'.encode('utf8'))
-            temp.write('\n'.join(line[4:] if line[:4] in ('... ', '>>> ') else '### '+line
+            temp.write('\n'.join(line[4:] if line[:4] in (self.ps2, self.ps1) else '### '+line
                                  for line in text.split('\n')).encode('utf8'))
             temp.flush()
             subprocess.call(editor_args + [temp.name])
