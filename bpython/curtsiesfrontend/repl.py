@@ -858,9 +858,10 @@ class Repl(BpythonRepl):
         editor = os.environ.get('VISUAL', os.environ.get('EDITOR', 'vim'))
         editor_args = editor.split()
         text = self.getstdout()
-        with tempfile.NamedTemporaryFile(suffix='.py') as temp:
+        with tempfile.NamedTemporaryFile(suffix='.hy') as temp:
             temp.write('### current bpython session - file will be reevaluated, ### lines will not be run\n'.encode('utf8'))
-            temp.write('\n'.join(line[4:] if line[:4] in (self.ps2, self.ps1) else '### '+line
+            temp.write('\n'.join(line[len(self.ps1):] if line.startswith(self.ps1) else
+                                 line[len(self.ps2):] if line.startswith(self.ps2) else '### '+line
                                  for line in text.split('\n')).encode('utf8'))
             temp.flush()
             subprocess.call(editor_args + [temp.name])
