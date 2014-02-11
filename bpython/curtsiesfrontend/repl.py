@@ -24,6 +24,8 @@ from curtsies.fmtstr import fmtstr, FmtStr
 from curtsies.bpythonparse import parse as bpythonparse
 from curtsies.bpythonparse import func_for_letter, color_for_letter
 
+import hy.cmdline
+
 from bpython.curtsiesfrontend.manual_readline import char_sequences as rl_char_sequences
 from bpython.curtsiesfrontend.manual_readline import get_updated_char_sequences
 from bpython.curtsiesfrontend.interaction import StatusBar
@@ -128,7 +130,7 @@ class Repl(BpythonRepl):
             config = Struct()
             loadini(config, default_config_path())
 
-        interp = code.InteractiveInterpreter(locals=locals_)
+        interp = hy.cmdline.HyREPL(locals=locals_)
 
         if banner is None:
             banner = _('welcome to bpython')
@@ -802,7 +804,7 @@ class Repl(BpythonRepl):
         self.display_lines = []
 
         self.done = True # this keeps the first prompt correct
-        self.interp = code.InteractiveInterpreter()
+        self.interp = hy.cmdline.HyREPL()
         self.coderunner.interp = self.interp
         self.completer = Autocomplete(self.interp.locals, self.config)
         self.completer.autocomplete_mode = 'simple'
