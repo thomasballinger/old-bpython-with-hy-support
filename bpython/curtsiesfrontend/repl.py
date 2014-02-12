@@ -8,7 +8,7 @@ import greenlet
 import subprocess
 import tempfile
 
-from bpython.autocomplete import Autocomplete, SIMPLE
+from bpython.autocomplete import SIMPLE
 from bpython.repl import Repl as BpythonRepl
 from bpython.config import Struct, loadini, default_config_path
 from bpython.formatter import BPythonFormatter
@@ -27,6 +27,7 @@ from curtsies.bpythonparse import func_for_letter, color_for_letter
 import hy.cmdline
 import hy.lex
 
+from bpython.curtsiesfrontend.hycomplete import Autocomplete
 from bpython.curtsiesfrontend.manual_readline import char_sequences as rl_char_sequences
 from bpython.curtsiesfrontend.manual_readline import get_updated_char_sequences
 from bpython.curtsiesfrontend.interaction import StatusBar
@@ -158,6 +159,8 @@ class Repl(BpythonRepl):
         self.rl_char_sequences = get_updated_char_sequences(key_dispatch, config)
         logging.debug("starting parent init")
         super(Repl, self).__init__(interp, config)
+        self.completer = Autocomplete(self.interp.locals, self.config)
+        self.completer.autocomplete_mode = 'simple'
         self.ps1 = '=> '
         self.formatter = BPythonFormatter(config.color_scheme)
         self.interact = self.status_bar # overwriting what bpython.Repl put there
