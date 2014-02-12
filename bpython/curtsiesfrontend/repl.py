@@ -25,6 +25,7 @@ from curtsies.bpythonparse import parse as bpythonparse
 from curtsies.bpythonparse import func_for_letter, color_for_letter
 
 import hy.cmdline
+import hy.lex
 
 from bpython.curtsiesfrontend.manual_readline import char_sequences as rl_char_sequences
 from bpython.curtsiesfrontend.manual_readline import get_updated_char_sequences
@@ -462,10 +463,14 @@ class Repl(BpythonRepl):
             self.display_buffer.append(fmtstr(line))
 
         try:
-            c = bool(code.compile_command('\n'.join(self.buffer)))
+            hy.lex.tokenize('\n'.join(self.buffer))
             self.saved_predicted_parse_error = False
-        except (ValueError, SyntaxError, OverflowError):
+        except hy.lex.PrematureEndOfInput:
+            c = self.saved_predicted_parse_error = False
+        except (hy.lex.LexException):
             c = self.saved_predicted_parse_error = True
+        else:
+            c = True
         if c:
             logging.debug('finished - buffer cleared')
             self.display_lines.extend(self.display_buffer_lines)
