@@ -4,6 +4,9 @@ import re
 from bpython import inspection
 import hy.compiler
 import hy.macros
+import hy.core.language
+import hy.core.macros
+import hy.core.bootstrap
 
 try:
     import abc
@@ -83,11 +86,21 @@ class Autocomplete(rlcompleter.Completer):
         """
         hash = {}
         for nspace in [__builtin__.__dict__, self.namespace,
-                hy.compiler._compile_table, hy.macros._hy_macros]:
+                hy.compiler._compile_table, hy.macros._hy_macros, hy.macros._hy_reader]:
             for word, val in nspace.items():
                 if not isinstance(word, str): continue
                 if self.method_match(word, len(text), text) and word != "__builtins__":
                     hash[self._callable_postfix(val, word)] = 1
+        for word in hy.core.language.EXPORTS:
+            val = getattr(hy.core.language, word)
+            if self.method_match(word, len(text), text) and word != "__builtins__":
+                hash[self._callable_postfix(val, word)] = 1
+        for name, d in hy.macros._hy_macros.items():
+            if not d: continue
+            for word, val in d.items():
+                if self.method_match(word, len(text), text) and word != "__builtins__":
+                    hash[self._callable_postfix(val, word)] = 1
+
         matches = hash.keys()
         matches.sort()
         return matches

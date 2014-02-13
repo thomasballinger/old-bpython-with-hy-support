@@ -53,7 +53,7 @@ class StatusBar(BpythonInteraction):
             self.waiting_for_refresh = False
             self.request_greenlet.switch()
         elif e in rl_char_sequences:
-            self.cursor_offset_in_line, self._current_line = rl_char_sequences[e](self.cursor_offset_in_line, self._current_line)
+            self.cursor_offset_in_line, self._current_line = rl_char_sequences[e](self.cursor_offset_in_line, self._current_line, e)
         elif e == "":
             raise KeyboardInterrupt()
         elif e == "":
