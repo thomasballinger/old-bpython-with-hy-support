@@ -1,6 +1,10 @@
+This is a fork of bpython for use with Hy (http://docs.hylang.org/en/latest/).
+
 Not the real bpython - see https://bitbucket.org/bobf/bpython for that.
 
-bpython curtsies - bypython with native terminal scrolling!
+bpython-hy - bpython for hy!
+
+bpython-curtsies - bypython with native terminal scrolling!
 
 Install with
 `pip install git+https://github.com/thomasballinger/bpython.git@curtsies greenlet curtsies`
@@ -18,6 +22,8 @@ so variable bindings are actually undone.
 Since it's not limited to keys curses can detect, there are more keybinds:
 
 .. image:: http://ballingt.com/assets/bpython-curtsies-demo-large.gif
+
+See http://bitbucket.org/bobf/bpython/ for the real bpython.
 
 See http://ballingt.com/2013/12/21/bpython-curtsies.html for more.
 
