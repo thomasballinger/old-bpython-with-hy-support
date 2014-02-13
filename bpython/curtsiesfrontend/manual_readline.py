@@ -153,11 +153,11 @@ def delete_word_from_cursor_back(cursor_offset, line, e):
 @on('[')
 @on(']')
 def insert_matching_char(cursor_pos, line, char):
+    return cursor_pos + 1, line[:cursor_pos] + char + line[cursor_pos:]
     if len(line) > cursor_pos and line[cursor_pos] == char:
         return cursor_pos + 1, line
     if char in ('(','[',):
         return cursor_pos + 1, line[:cursor_pos] + char + MATCHING_CHARS[char] + line[cursor_pos:]
-    return cursor_pos + 1, line[:cursor_pos] + char + line[cursor_pos:]
 
 def remove_matching_char(cursor_pos, line, char):
     pass

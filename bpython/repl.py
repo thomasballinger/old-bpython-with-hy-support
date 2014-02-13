@@ -43,9 +43,11 @@ from urlparse import urlparse
 from xmlrpclib import ServerProxy, Error as XMLRPCError
 
 from pygments.token import Token
+from pygments.lexers import get_lexer_by_name
+hy_lexer = get_lexer_by_name('hylang')
 
 from bpython import importcompletion, inspection
-from bpython._py3compat import PythonLexer, py3
+from bpython._py3compat import py3
 from bpython.formatter import Parenthesis
 from bpython.translations import _
 from bpython.autocomplete import Autocomplete
@@ -465,7 +467,7 @@ class Repl(object):
         # the arguments
         stack = [['', 0, '']]
         try:
-            for (token, value) in PythonLexer().get_tokens(
+            for (token, value) in hy_lexer.get_tokens(
                 self.current_line()):
                 if token is Token.Punctuation:
                     if value in '([{':
@@ -910,7 +912,7 @@ class Repl(object):
         if self.cpos:
             cursor += 1
         stack = list()
-        all_tokens = list(PythonLexer().get_tokens(source))
+        all_tokens = list(hy_lexer.get_tokens(source))
         # Unfortunately, Pygments adds a trailing newline and strings with
         # no size, so strip them
         while not all_tokens[-1][1]:
@@ -1008,7 +1010,7 @@ def next_indentation(line, tab_length):
 def next_token_inside_string(s, inside_string):
     """Given a code string s and an initial state inside_string, return
     whether the next token will be inside a string or not."""
-    for token, value in PythonLexer().get_tokens(s):
+    for token, value in hy_lexer.get_tokens(s):
         if token is Token.String:
             value = value.lstrip('bBrRuU')
             if value in ['"""', "'''", '"', "'"]:
