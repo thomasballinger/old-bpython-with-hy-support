@@ -26,6 +26,7 @@ import code
 import codecs
 import errno
 import inspect
+import logging
 import os
 import pydoc
 import subprocess
@@ -63,6 +64,48 @@ try:
 except (ImportError, AttributeError):
     has_abc = False
 
+def get_name_of_current_function(current_line):
+
+    # Get the name of the current function and where we are in
+    # the arguments
+    stack = [['', 0, '']]
+    try:
+        logging.debug('tokens during get_name_of_current_function: %r', list(hy_lexer.get_tokens(current_line)))
+        for (token, value) in hy_lexer.get_tokens(current_line):
+            if token is Token.Punctuation:
+                if value in '([{':
+                    stack.append(['', 0, value])
+                elif value in ')]}':
+                    stack.pop()
+                elif value == ',':
+                    try:
+                        stack[-1][1] += 1
+                    except TypeError:
+                        stack[-1][1] = ''
+                    stack[-1][0] = ''
+                elif value == ':' and stack[-1][2] == 'lambda':
+                    stack.pop()
+                else:
+                    stack[-1][0] = ''
+            elif (token is Token.Name or token in Token.Name.subtypes or
+                  token is Token.Operator and value == '.'):
+                stack[-1][0] += value
+            elif token is Token.Operator and value == '=':
+                stack[-1][1] = stack[-1][0]
+                stack[-1][0] = ''
+            elif token is Token.Keyword and value == 'lambda':
+                stack.append(['', 0, value])
+            else:
+                stack[-1][0] = ''
+        while stack[-1][2] in '[{':
+            stack.pop()
+        _, arg_number, _ = stack.pop()
+        func, _, _ = stack.pop()
+    except IndexError:
+        return False
+    if not func:
+        return False
+    return func, arg_number
 
 class Interpreter(code.InteractiveInterpreter):
 
@@ -463,45 +506,9 @@ class Repl(object):
         if not self.config.arg_spec:
             return False
 
-        # Get the name of the current function and where we are in
-        # the arguments
-        stack = [['', 0, '']]
-        try:
-            for (token, value) in hy_lexer.get_tokens(
-                self.current_line()):
-                if token is Token.Punctuation:
-                    if value in '([{':
-                        stack.append(['', 0, value])
-                    elif value in ')]}':
-                        stack.pop()
-                    elif value == ',':
-                        try:
-                            stack[-1][1] += 1
-                        except TypeError:
-                            stack[-1][1] = ''
-                        stack[-1][0] = ''
-                    elif value == ':' and stack[-1][2] == 'lambda':
-                        stack.pop()
-                    else:
-                        stack[-1][0] = ''
-                elif (token is Token.Name or token in Token.Name.subtypes or
-                      token is Token.Operator and value == '.'):
-                    stack[-1][0] += value
-                elif token is Token.Operator and value == '=':
-                    stack[-1][1] = stack[-1][0]
-                    stack[-1][0] = ''
-                elif token is Token.Keyword and value == 'lambda':
-                    stack.append(['', 0, value])
-                else:
-                    stack[-1][0] = ''
-            while stack[-1][2] in '[{':
-                stack.pop()
-            _, arg_number, _ = stack.pop()
-            func, _, _ = stack.pop()
-        except IndexError:
-            return False
-        if not func:
-            return False
+        result = get_name_of_current_function(self.current_line())
+        if result is False: return False
+        func, arg_number = result
 
         try:
             f = self.get_object(func)
