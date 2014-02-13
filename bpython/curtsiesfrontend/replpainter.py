@@ -62,7 +62,8 @@ def matches_lines(rows, columns, matches, current, config):
                                       for m in matches[i:i+words_wide])
                      for i in range(0, len(matches), words_wide)]
 
-    logging.debug('match: %r' % current)
+    logging.debug('current: %r' % current)
+    logging.debug('matches: %r' % matches)
     logging.debug('matches_lines: %r' % matches_lines)
     return matches_lines
 

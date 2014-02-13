@@ -559,14 +559,16 @@ class Repl(BpythonRepl):
 
     @property
     def current_word(self):
-        words = re.split(r'([\w_][\w0-9._]*[(]?)', self._current_line)
+        word_pattern = r'([^()\[\]{}\'"\s;]+)'
+        words = re.split(r'([\w_][\w0-9._*-]*[(]?)', self._current_line)
+        words = re.split(word_pattern, self._current_line)
         chars = 0
         cw = None
         for word in words:
             chars += len(word)
             if chars == self.cursor_offset_in_line and word and word.count(' ') == 0:
                 cw = word
-        if cw and re.match(r'^[\w_][\w0-9._]*[(]?$', cw):
+        if cw and re.match(r'^'+word_pattern+'$', cw):
             return cw
 
     @current_word.setter
