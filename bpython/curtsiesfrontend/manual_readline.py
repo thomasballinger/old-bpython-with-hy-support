@@ -7,6 +7,7 @@ in the order of description at http://www.bigsmoke.us/readline/shortcuts"""
 from bpython.curtsiesfrontend.friendly import NotImplementedError
 import re
 char_sequences = {}
+MATCHING_CHARS = {'(':')', ')':'(', '[':']', ']':'['}
 
 #TODO fix this - should use value in repl.
 # Sadly, this breaks the pure function aspect of backspace!
@@ -24,30 +25,30 @@ def on(seq):
 @on('')
 @on(chr(2))
 @on('KEY_LEFT')
-def left_arrow(cursor_offset, line):
+def left_arrow(cursor_offset, line, e):
     return max(0, cursor_offset - 1), line
 
 @on('[C')
 @on('')
 @on(chr(6))
 @on('KEY_RIGHT')
-def right_arrow(cursor_offset, line):
+def right_arrow(cursor_offset, line, e):
     return min(len(line), cursor_offset + 1), line
 
 @on('')
 @on('KEY_HOME')
-def beginning_of_line(cursor_offset, line):
+def beginning_of_line(cursor_offset, line, e):
     return 0, line
 
 @on('')
 @on('KEY_END')
-def end_of_line(cursor_offset, line):
+def end_of_line(cursor_offset, line, e):
     return len(line), line
 
 @on('f')
 @on('l')
 @on('\x1bOC')
-def forward_word(cursor_offset, line):
+def forward_word(cursor_offset, line, e):
     patt = r"\S\s"
     match = re.search(patt, line[cursor_offset:]+' ')
     delta = match.end() - 1 if match else 0
@@ -56,10 +57,10 @@ def forward_word(cursor_offset, line):
 @on('b')
 @on('\x1bOD')
 @on('\x1bB')
-def back_word(cursor_offset, line):
+def back_word(cursor_offset, line, e):
     return (last_word_pos(line[:cursor_offset]), line)
 
-def last_word_pos(string):
+def last_word_pos(string, e):
     """returns the start index of the last word of given string"""
     patt = r'\S\s'
     match = re.search(patt, string[::-1])
@@ -68,14 +69,14 @@ def last_word_pos(string):
 
 @on('[3~')
 @on('KEY_DC')
-def delete(cursor_offset, line):
+def delete(cursor_offset, line, e):
     return (cursor_offset,
             line[:cursor_offset] + line[cursor_offset+1:])
 
 @on('')
 @on('')
 @on('KEY_BACKSPACE')
-def backspace(cursor_offset, line):
+def backspace(cursor_offset, line, e):
     if cursor_offset == 0:
         return cursor_offset, line
     if not line[:cursor_offset].strip(): #if just whitespace left of cursor
@@ -86,32 +87,32 @@ def backspace(cursor_offset, line):
             line[:cursor_offset - 1] + line[cursor_offset:])
 
 @on('')
-def delete_from_cursor_back(cursor_offset, line):
+def delete_from_cursor_back(cursor_offset, line, e):
     return 0, line[cursor_offset:]
 
 @on('')
-def delete_from_cursor_forward(cursor_offset, line):
+def delete_from_cursor_forward(cursor_offset, line, e):
     return cursor_offset, line[:cursor_offset]
 
 @on('d') # option-d
-def delete_rest_of_word(cursor_offset, line):
+def delete_rest_of_word(cursor_offset, line, e):
     m = re.search(r'\w\b', line[cursor_offset:])
     if not m:
         return cursor_offset, line
     return cursor_offset, line[:cursor_offset] + line[m.start()+cursor_offset+1:]
 
 @on('')
-def delete_word_to_cursor(cursor_offset, line):
+def delete_word_to_cursor(cursor_offset, line, e):
     matches = list(re.finditer(r'\s\S', line[:cursor_offset]))
     start = matches[-1].start()+1 if matches else 0
     return start, line[:start] + line[cursor_offset:]
 
 @on('y')
-def yank_prev_prev_killed_text(cursor_offset, line):
+def yank_prev_prev_killed_text(cursor_offset, line, e):
     raise NotImplementedError()
 
 @on('')
-def transpose_character_before_cursor(cursor_offset, line):
+def transpose_character_before_cursor(cursor_offset, line, e):
     return (min(len(line), cursor_offset + 1),
             line[:cursor_offset-1] +
             (line[cursor_offset] if len(line) > cursor_offset else '') +
@@ -119,26 +120,26 @@ def transpose_character_before_cursor(cursor_offset, line):
             line[cursor_offset+1:])
 
 @on('t')
-def transpose_word_before_cursor(cursor_offset, line):
+def transpose_word_before_cursor(cursor_offset, line, e):
     raise NotImplementedError()
 
 # bonus functions (not part of readline)
 
 @on('r')
-def delete_line(cursor_offset, line):
+def delete_line(cursor_offset, line, e):
     return 0, ""
 
 @on('u')
-def uppercase_next_word(cursor_offset, line):
+def uppercase_next_word(cursor_offset, line, e):
     raise NotImplementedError()
 
 @on('c')
-def titlecase_next_word(cursor_offset, line):
+def titlecase_next_word(cursor_offset, line, e):
     raise NotImplementedError()
 
 @on('\x1b\x7f')
 @on('\xff')
-def delete_word_from_cursor_back(cursor_offset, line):
+def delete_word_from_cursor_back(cursor_offset, line, e):
     """Whatever my option-delete does in bash on my mac"""
     if not line:
         return cursor_offset, line
@@ -146,6 +147,20 @@ def delete_word_from_cursor_back(cursor_offset, line):
     if starts:
         return starts[-1], line[:starts[-1]] + line[cursor_offset:]
     return cursor_offset, line
+
+@on('(')
+@on(')')
+@on('[')
+@on(']')
+def insert_matching_char(cursor_pos, line, char):
+    if len(line) > cursor_pos and line[cursor_pos] == char:
+        return cursor_pos + 1, line
+    if char in ('(','[',):
+        return cursor_pos + 1, line[:cursor_pos] + char + MATCHING_CHARS[char] + line[cursor_pos:]
+    return cursor_pos + 1, line[:cursor_pos] + char + line[cursor_pos:]
+
+def remove_matching_char(cursor_pos, line, char):
+    pass
 
 def get_updated_char_sequences(key_dispatch, config):
     updated_char_sequences = dict(char_sequences)

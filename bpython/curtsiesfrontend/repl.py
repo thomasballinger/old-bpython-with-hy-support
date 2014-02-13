@@ -2,7 +2,6 @@ import sys
 import os
 import re
 import logging
-import code
 import threading
 import greenlet
 import subprocess
@@ -63,7 +62,7 @@ class FakeStdin(object):
             for ee in e.events:
                 self.add_normal_character(ee if len(ee) == 1 else ee[-1]) #strip control seq
         elif e in rl_char_sequences:
-            self.cursor_offset_in_line, self.current_line = rl_char_sequences[e](self.cursor_offset_in_line, self.current_line)
+            self.cursor_offset_in_line, self.current_line = rl_char_sequences[e](self.cursor_offset_in_line, self.current_line, e)
         elif isinstance(e, events.SigIntEvent):
             self.coderunner.sigint_happened = True
             self.has_focus = False
@@ -279,7 +278,7 @@ class Repl(BpythonRepl):
             self.update_completion()
 
         elif e in self.rl_char_sequences:
-            self.cursor_offset_in_line, self._current_line = self.rl_char_sequences[e](self.cursor_offset_in_line, self._current_line)
+            self.cursor_offset_in_line, self._current_line = self.rl_char_sequences[e](self.cursor_offset_in_line, self._current_line, e)
             self.update_completion()
 
         # readline history commands
