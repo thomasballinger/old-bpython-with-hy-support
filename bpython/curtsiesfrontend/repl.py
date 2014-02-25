@@ -2,12 +2,13 @@ import sys
 import os
 import re
 import logging
+import code
 import threading
 import greenlet
 import subprocess
 import tempfile
 
-from bpython.autocomplete import SIMPLE
+from bpython.autocomplete import Autocomplete, SIMPLE
 from bpython.repl import Repl as BpythonRepl
 from bpython.config import Struct, loadini, default_config_path
 from bpython.formatter import BPythonFormatter
@@ -23,10 +24,12 @@ from curtsies.fmtstr import fmtstr, FmtStr
 from curtsies.bpythonparse import parse as bpythonparse
 from curtsies.bpythonparse import func_for_letter, color_for_letter
 
-import hy.cmdline
-import hy.lex
+try:
+    import hy.cmdline
+    import hy.lex
+except ImportError:
+    pass # we'll get a hy error later
 
-from bpython.curtsiesfrontend.hycomplete import Autocomplete
 from bpython.curtsiesfrontend.manual_readline import char_sequences as rl_char_sequences
 from bpython.curtsiesfrontend.manual_readline import get_updated_char_sequences
 from bpython.curtsiesfrontend.interaction import StatusBar
@@ -130,14 +133,20 @@ class Repl(BpythonRepl):
     """
 
     ## initialization, cleanup
-    def __init__(self, locals_=None, config=None, stuff_a_refresh_request=lambda: None, banner=None):
+    def __init__(self, locals_=None, config=None, stuff_a_refresh_request=lambda: None, banner=None, language='python'):
         logging.debug("starting init")
 
         if config is None:
             config = Struct()
             loadini(config, default_config_path())
 
-        interp = hy.cmdline.HyREPL(locals=locals_)
+        self.language = language
+
+        if language == 'hy':
+            import hy.cmdline, hy.lex #imports that better have succeeded earlier
+            interp = hy.cmdline.HyREPL(locals=locals_)
+        else:
+            interp = code.InteractiveInterpreter(locals=locals_)
 
         if banner is None:
             banner = _('welcome to bpython')
@@ -164,9 +173,11 @@ class Repl(BpythonRepl):
         self.rl_char_sequences = get_updated_char_sequences(key_dispatch, config)
         logging.debug("starting parent init")
         super(Repl, self).__init__(interp, config)
-        self.completer = Autocomplete(self.interp.locals, self.config)
-        self.completer.autocomplete_mode = 'simple'
-        self.ps1 = '=> '
+        if language == 'hy':
+            from bpython.curtsiesfrontend.hycomplete import Autocomplete as HyAutocomplete
+            self.completer = HyAutocomplete(self.interp.locals, self.config)
+            self.completer.autocomplete_mode = 'simple'
+            self.ps1 = '=> '
         self.formatter = BPythonFormatter(config.color_scheme)
         self.interact = self.status_bar # overwriting what bpython.Repl put there
                                         # interact is called to interact with the status bar,
@@ -486,15 +497,22 @@ class Repl(BpythonRepl):
         else:
             self.display_buffer.append(fmtstr(line))
 
-        try:
-            hy.lex.tokenize('\n'.join(self.buffer))
-            self.saved_predicted_parse_error = False
-        except hy.lex.PrematureEndOfInput:
-            c = self.saved_predicted_parse_error = False
-        except (hy.lex.LexException):
-            c = self.saved_predicted_parse_error = True
+        if self.language == 'hy':
+            try:
+                hy.lex.tokenize('\n'.join(self.buffer))
+                self.saved_predicted_parse_error = False
+            except hy.lex.PrematureEndOfInput:
+                c = self.saved_predicted_parse_error = False
+            except (hy.lex.LexException):
+                c = self.saved_predicted_parse_error = True
+            else:
+                c = True
         else:
-            c = True
+            try:
+                c = bool(code.compile_command('\n'.join(self.buffer)))
+                self.saved_predicted_parse_error = False
+            except (ValueError, SyntaxError, OverflowError):
+                c = self.saved_predicted_parse_error = True
         if c:
             logging.debug('finished - buffer cleared')
             self.display_lines.extend(self.display_buffer_lines)
@@ -581,8 +599,10 @@ class Repl(BpythonRepl):
 
     @property
     def current_word(self):
-        word_pattern = r'([^()\[\]{}\'"\s;]+)'
-        words = re.split(r'([\w_][\w0-9._*-]*[(]?)', self._current_line)
+        if self.language == 'hy':
+            word_pattern = r'([^()\[\]{}\'"\s;]+)'
+        else:
+            word_pattern = r'([\w_][\w0-9._]*[(]?)'
         words = re.split(word_pattern, self._current_line)
         chars = 0
         cw = None
@@ -836,7 +856,10 @@ class Repl(BpythonRepl):
         self.display_lines = []
 
         self.done = True # this keeps the first prompt correct
-        self.interp = hy.cmdline.HyREPL()
+        if self.language == 'hy':
+            self.interp = hy.cmdline.HyREPL()
+        else:
+            self.interp = code.InteractiveInterpreter()
         self.coderunner.interp = self.interp
         self.completer = Autocomplete(self.interp.locals, self.config)
         self.completer.autocomplete_mode = 'simple'
@@ -867,7 +890,7 @@ class Repl(BpythonRepl):
         editor = os.environ.get('VISUAL', os.environ.get('EDITOR', 'vim'))
         editor_args = editor.split()
         text = self.getstdout()
-        with tempfile.NamedTemporaryFile(suffix='.hy') as temp:
+        with tempfile.NamedTemporaryFile(suffix='.hy' if self.language == 'hy' else '.py') as temp:
             temp.write('### current bpython session - file will be reevaluated, ### lines will not be run\n'.encode('utf8'))
             temp.write('\n'.join(line[len(self.ps1):] if line.startswith(self.ps1) else
                                  line[len(self.ps2):] if line.startswith(self.ps2) else '### '+line

@@ -45,10 +45,8 @@ from xmlrpclib import ServerProxy, Error as XMLRPCError
 
 from pygments.token import Token
 from pygments.lexers import get_lexer_by_name
-hy_lexer = get_lexer_by_name('hylang')
-
 from bpython import importcompletion, inspection
-from bpython._py3compat import py3
+from bpython._py3compat import PythonLexer, py3
 from bpython.formatter import Parenthesis
 from bpython.translations import _
 from bpython.autocomplete import Autocomplete
@@ -64,14 +62,13 @@ try:
 except (ImportError, AttributeError):
     has_abc = False
 
-def get_name_of_current_function(current_line):
+def get_name_of_current_python_function(current_line):
 
     # Get the name of the current function and where we are in
     # the arguments
     stack = [['', 0, '']]
     try:
-        logging.debug('tokens during get_name_of_current_function: %r', list(hy_lexer.get_tokens(current_line)))
-        for (token, value) in hy_lexer.get_tokens(current_line):
+        for (token, value) in PythonLexer().get_tokens(current_line):
             if token is Token.Punctuation:
                 if value in '([{':
                     stack.append(['', 0, value])
@@ -506,7 +503,7 @@ class Repl(object):
         if not self.config.arg_spec:
             return False
 
-        result = get_name_of_current_function(self.current_line())
+        result = get_name_of_current_python_function(self.current_line())
         if result is False: return False
         func, arg_number = result
 
@@ -919,7 +916,10 @@ class Repl(object):
         if self.cpos:
             cursor += 1
         stack = list()
-        all_tokens = list(hy_lexer.get_tokens(source))
+        if self.language == 'hy':
+            all_tokens = list(get_lexer_by_name('hylang').get_tokens(source))
+        else:
+            all_tokens = list(PythonLexer().get_tokens(source))
         # Unfortunately, Pygments adds a trailing newline and strings with
         # no size, so strip them
         while not all_tokens[-1][1]:
@@ -1014,10 +1014,23 @@ def next_indentation(line, tab_length):
     return indentation
 
 
-def next_token_inside_string(s, inside_string):
+def next_token_inside_hy_string(s, inside_string):
     """Given a code string s and an initial state inside_string, return
     whether the next token will be inside a string or not."""
-    for token, value in hy_lexer.get_tokens(s):
+    for token, value in get_lexer_by_name('hylang').get_tokens(s):
+        if token is Token.String:
+            value = value.lstrip('bBrRuU')
+            if value in ['"""', "'''", '"', "'"]:
+                if not inside_string:
+                    inside_string = value
+                elif value == inside_string:
+                    inside_string = False
+    return inside_string
+
+def next_token_inside_python_string(s, inside_string):
+    """Given a code string s and an initial state inside_string, return
+    whether the next token will be inside a string or not."""
+    for token, value in PythonLexer().get_tokens(s):
         if token is Token.String:
             value = value.lstrip('bBrRuU')
             if value in ['"""', "'''", '"', "'"]:

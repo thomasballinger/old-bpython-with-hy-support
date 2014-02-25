@@ -16,7 +16,7 @@ from bpython.curtsiesfrontend.coderunner import SystemExitFromCodeThread
 from bpython import args as bpargs
 from bpython.translations import _
 
-def main(args=None, locals_=None, banner=None):
+def main(args=None, locals_=None, banner=None, lang='python'):
     config, options, exec_args = bpargs.parse(args, (
         'scroll options', None, [
             Option('--log', '-L', action='store_true',
@@ -35,7 +35,8 @@ def main(args=None, locals_=None, banner=None):
             with Repl(config=config,
                       locals_=locals_,
                       stuff_a_refresh_request=tc.stuff_a_refresh_request,
-                      banner=banner) as repl:
+                      banner=banner,
+                      language=lang) as repl:
                 rows, columns = tc.get_screen_size()
                 repl.width = columns
                 repl.height = rows

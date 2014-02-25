@@ -154,6 +154,7 @@ setup(
     ],
     extras_require = {
         'curtsies': ['curtsies>=0.0.26', 'greenlet'],
+        'hy' : ['hy'],
         'urwid' : ['urwid']
     },
     tests_require = ['mock'],
@@ -169,6 +170,7 @@ setup(
             'bpython = bpython.cli:main',
             'bpython-urwid = bpython.urwid:main [urwid]',
             'bpython-curtsies = bpython.curtsies:main [curtsies]',
+            'bpython-curtsies = bpython.hy:main [hy]',
         ],
         'gui_scripts': [
             'bpython-gtk = bpython.gtk_:main'
@@ -177,6 +179,7 @@ setup(
     scripts = ([] if using_setuptools else ['data/bpython',
                                             'data/bpython-gtk',
                                             'data/bpython-curtsies',
+                                            'data/bpython-hy',
                                             'data/bpython-urwid']),
     cmdclass = cmdclass,
     test_suite = 'bpython.test'
