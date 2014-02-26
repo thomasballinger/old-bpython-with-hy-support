@@ -150,11 +150,14 @@ setup(
     long_description = """bpython is a fancy interface to the Python
     interpreter for Unix-like operating systems.""",
     install_requires = [
-        'pygments'
+        'pygments==dev,>=1.7pre'
     ],
+    dependency_links = [
+        'http://bitbucket.org/birkenfeld/pygments-main/get/default.zip#egg=Pygments-dev'
+        ],
     extras_require = {
         'curtsies': ['curtsies>=0.0.26', 'greenlet'],
-        'hy' : ['hy'],
+        'hy' : ['hy', 'curtsies>=0.0.26', 'greenlet'],
         'urwid' : ['urwid']
     },
     tests_require = ['mock'],
@@ -170,7 +173,7 @@ setup(
             'bpython = bpython.cli:main',
             'bpython-urwid = bpython.urwid:main [urwid]',
             'bpython-curtsies = bpython.curtsies:main [curtsies]',
-            'bpython-curtsies = bpython.hy:main [hy]',
+            'bpython-hy = bpython.hy:main [hy]',
         ],
         'gui_scripts': [
             'bpython-gtk = bpython.gtk_:main'
