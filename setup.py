@@ -140,17 +140,20 @@ for language in os.listdir(translations_dir):
         mo_files.append(mo_subpath)
 
 setup(
-    name="bpython",
+    name="bpython-hy",
     version = __version__,
-    author = "Bob Farrell, Andreas Stuehrk et al.",
-    author_email = "robertanthonyfarrell@gmail.com",
+    author = "Tom Ballinger (but mostly Bob Farrell, Andreas Stuehrk et al.)",
+    author_email = "thomasballinger@gmail.com",
     description = "Fancy Interface to the Python Interpreter",
     license = "MIT/X",
     url = "http://www.bpython-interpreter.org/",
     long_description = """bpython is a fancy interface to the Python
     interpreter for Unix-like operating systems.""",
     install_requires = [
-        'pygments==dev,>=1.7pre'
+        'pygments==dev,>=1.7pre',
+        'curtsies>=0.0.26',
+        'greenlet',
+        'hy',
     ],
     dependency_links = [
         'http://bitbucket.org/birkenfeld/pygments-main/get/default.zip#egg=Pygments-dev'
