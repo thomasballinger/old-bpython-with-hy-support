@@ -140,7 +140,7 @@ for language in os.listdir(translations_dir):
         mo_files.append(mo_subpath)
 
 setup(
-    name="bpython-hy",
+    name="bphython",
     version = __version__,
     author = "Tom Ballinger (but mostly Bob Farrell, Andreas Stuehrk et al.)",
     author_email = "thomasballinger@gmail.com",
