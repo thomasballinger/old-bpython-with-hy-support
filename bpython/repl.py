@@ -70,7 +70,6 @@ def get_name_of_current_python_function(current_line):
     stack = [['', 0, '']]
     try:
         for (token, value) in PythonLexer().get_tokens(current_line):
-            print stack
             if token is Token.Punctuation:
                 if value in '([{':
                     stack.append(['', 0, value])
