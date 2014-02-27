@@ -50,6 +50,7 @@ from bpython._py3compat import PythonLexer, py3
 from bpython.formatter import Parenthesis
 from bpython.translations import _
 from bpython.autocomplete import Autocomplete
+from bpython.curtsiesfrontend.hyfuncname import get_name_of_current_hy_function
 
 
 # Needed for special handling of __abstractmethods__
@@ -69,6 +70,7 @@ def get_name_of_current_python_function(current_line):
     stack = [['', 0, '']]
     try:
         for (token, value) in PythonLexer().get_tokens(current_line):
+            print stack
             if token is Token.Punctuation:
                 if value in '([{':
                     stack.append(['', 0, value])
@@ -503,7 +505,11 @@ class Repl(object):
         if not self.config.arg_spec:
             return False
 
-        result = get_name_of_current_python_function(self.current_line())
+        if hasattr(self, 'language') and self.language == 'hy':
+            result = get_name_of_current_hy_function(self.current_line())
+        else:
+            result = get_name_of_current_python_function(self.current_line())
+
         if result is False: return False
         func, arg_number = result
 
@@ -916,7 +922,7 @@ class Repl(object):
         if self.cpos:
             cursor += 1
         stack = list()
-        if self.language == 'hy':
+        if hasattr(self, 'language') and self.language == 'hy':
             all_tokens = list(get_lexer_by_name('hylang').get_tokens(source))
         else:
             all_tokens = list(PythonLexer().get_tokens(source))
